@@ -37,7 +37,7 @@ jobs:
 
       - name: COPY build files to PROD S3 Bucket via AWS CLI
         run: |
-          aws s3 sync --delete ${{env.dist}} s3://${{env.BUCKET}}
+          aws s3 sync --delete ${{env.DIST}} s3://${{env.BUCKET}}
 
       - name: Invalidate cloudfront cache
         run: |
