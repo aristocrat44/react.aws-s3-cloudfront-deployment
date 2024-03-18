@@ -1,0 +1,46 @@
+name: Build and Deploy to AWS
+on:
+  push:
+    branches: [main]
+jobs:
+  build-and-deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    env:
+      BUCKET: www.theophagy-capilotade.io
+      DIST: dist
+      REGION: ap-southeast-1
+      DIST_ID: E2OIKLLVZKQT1X
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{secrets.AWS_ACCESS_KEY_ID}}
+          aws-secret-access-key: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+          aws-region: ${{env.REGION}}
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "20"
+
+      - name: Install Node
+        run: |
+          yarn cache clean
+          yarn install --frozen-lockfile
+
+      - name: Build Static Website
+        run: yarn build
+
+      - name: COPY build files to PROD S3 Bucket via AWS CLI
+        run: |
+          aws s3 sync --delete ${{env.dist}} s3://${{env.BUCKET}}
+
+      - name: Invalidate cloudfront cache
+        run: |
+          aws cloudfront create-invalidation \
+          --distribution-id ${{env.DIST_ID}} \
+          --paths "/*"
